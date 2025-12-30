@@ -51,12 +51,14 @@ The API returns a JSON object with the detected action and confidence score.
   "confidence": 0.947,
   "message": "Success"
 }
+```
 
 **Example Error Response:**
+```json
 {
   "detail": "Error processing video"
 }
-
+```
 ### Acknowledgments
 * **Instructor:** Sir Mehdi Hassan
 * **Dataset:** UCF101 (Center for Research in Computer Vision)
