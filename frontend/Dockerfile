@@ -1,12 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy project file (safe for monorepo root build context)
-COPY ["frontend/frontend.csproj", "./"]
+# Copy project file (Dockerfile is inside the frontend folder, so use relative paths)
+COPY ["frontend.csproj", "./"]
 RUN dotnet restore "./frontend.csproj"
 
 # Copy remaining sources
-COPY ["frontend/", "./"]
+COPY [".", "./"]
+
 # Publish
 RUN dotnet publish -c Release -o /app/publish
 
