@@ -1,0 +1,392 @@
+@page "/"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Components.Forms
+@inject Frontend.Services.ActionService ActionService
+
+<style>
+    @@keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @@keyframes pulse-ring {
+        0% { transform: scale(0.95); opacity: 1; }
+        50% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(0.95); opacity: 1; }
+    }
+
+    body {
+        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #1e3a8a);
+        background-size: 400% 400%;
+        animation: gradient-shift 15s ease infinite;
+        min-height: 100vh;
+    }
+
+    .main-container {
+        min-height: 100vh;
+        padding: 3rem 1rem;
+    }
+
+    .hero-card {
+        animation: float 6s ease-in-out infinite;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .gradient-header {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .upload-zone {
+        border: 2px dashed #6366f1;
+        border-radius: 1rem;
+        padding: 3rem 2rem;
+        background: rgba(99, 102, 241, 0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .upload-zone:hover {
+        background: rgba(99, 102, 241, 0.15);
+        border-color: #a855f7;
+        transform: translateY(-2px);
+    }
+
+    .upload-zone.has-file {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+        animation: pulse-ring 2s ease-in-out infinite;
+    }
+
+    .upload-icon {
+        font-size: 4rem;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .btn-gradient {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        border: none;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .btn-gradient::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-gradient:hover::before {
+        width: 400px;
+        height: 400px;
+    }
+
+    .btn-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+    }
+
+    .result-card-success {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        animation: slideIn 0.5s ease;
+    }
+
+    .result-card-error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        animation: slideIn 0.5s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .info-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(99, 102, 241, 0.3);
+        transform: translateY(-2px);
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    /* Emphasis colors for dark background */
+    .text-success-emphasis { color: #8ef5b1; }
+    .text-warning-emphasis { color: #ffd88a; }
+    .text-danger-emphasis { color: #ffb4b4; }
+    .result-value { font-family: 'Courier New', monospace; font-size: 1rem; }
+</style>
+
+<div class="main-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-8">
+                <div class="card glass-card hero-card border-0 rounded-4 overflow-hidden">
+                    <div class="card-header gradient-header border-0 text-center py-5">
+                        <h1 class="display-4 fw-bold gradient-text mb-3">🎬 Action Recognition AI</h1>
+                        <p class="lead text-white-50 mb-0">Advanced video analysis powered by deep learning</p>
+                    </div>
+
+                    <div class="card-body p-4 p-md-5">
+                        <label class="upload-zone text-center d-block @(SelectedFile != null ? "has-file" : "")" for="fileInput">
+                            <div class="upload-icon mb-3">@(SelectedFile != null ? "✓" : "📹")</div>
+                            <h5 class="text-white mb-2">
+                                @if (SelectedFile != null)
+                                {
+                                    <text>Ready to analyze</text>
+                                }
+                                else
+                                {
+                                    <text>Click to select video or drag & drop</text>
+                                }
+                            </h5>
+                            <p class="text-white-50 mb-0 small">Supports MP4, AVI, MOV • Max 50MB recommended</p>
+                            <InputFile id="fileInput" OnChange="OnInputFileChange" accept=".mp4,video/mp4,.avi,.mov,video/*" />
+                        </label>
+
+                        @if (SelectedFile != null)
+                        {
+                            <div class="alert alert-success d-flex align-items-center mt-4 border-0" style="background: rgba(34, 197, 94, 0.15);">
+                                <span class="fs-3 me-3">📄</span>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold text-success-emphasis">@SelectedFile.Name</div>
+                                    <small class="text-success-emphasis opacity-75">@FormatFileSize(SelectedFile.Size)</small>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(FileWarning))
+                        {
+                            <div class="alert alert-warning d-flex align-items-center mt-4 border-0" style="background: rgba(251, 191, 36, 0.15);">
+                                <span class="fs-4 me-2">⚠️</span>
+                                <span class="text-warning-emphasis">@FileWarning</span>
+                            </div>
+                        }
+
+                        <button type="button" class="btn btn-gradient btn-lg w-100 text-white fw-semibold mt-4 py-3" 
+                                @onclick="Upload" 
+                                disabled="@(SelectedFile == null || IsLoading)"
+                                style="position: relative; z-index: 999; pointer-events: auto;">
+                            <span style="position: relative; z-index: 1;">
+                                @(IsLoading ? "🔄 Analyzing..." : "🚀 Upload & Predict")
+                            </span>
+                        </button>
+
+                        @if (IsLoading)
+                        {
+                            <div class="d-flex align-items-center justify-content-center gap-3 mt-4 text-white-50">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-white">Processing video...</div>
+                                    <small>This may take 30-45 seconds on first run</small>
+                                </div>
+                            </div>
+                        }
+
+                        @if (ResultData != null)
+                        {
+                            <div class="card result-card-success border-0 mt-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title fw-semibold mb-2 text-success">✨ Results</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="p-3 rounded bg-dark bg-opacity-50">
+                                                <div class="fw-semibold text-success-emphasis">Action</div>
+                                                <div class="result-value text-white">@ResultData.Action</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="p-3 rounded bg-dark bg-opacity-50">
+                                                <div class="fw-semibold text-success-emphasis">Confidence</div>
+                                                <div class="result-value text-white">@($"{ResultData.Confidence * 100:0.0}%")</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="p-3 rounded bg-dark bg-opacity-50">
+                                                <div class="fw-semibold text-success-emphasis">Message</div>
+                                                <div class="result-value text-white-50">@ResultData.Message</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(ResultMessage))
+                        {
+                            <div class="card result-card-error border-0 mt-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title fw-semibold mb-2 text-danger">❌ Analysis Failed</h5>
+                                    <div class="p-3 rounded bg-dark bg-opacity-50">
+                                        <div class="result-value text-danger-emphasis">@ResultMessage</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row g-3 mt-4 pt-4 border-top border-white border-opacity-10">
+                            <div class="col-md-4">
+                                <div class="card info-card border-0 h-100">
+                                    <div class="card-body p-4">
+                                        <div class="badge bg-primary bg-opacity-25 text-primary mb-3">⚡ COLD START</div>
+                                        <p class="card-text text-white-50 mb-0 small">First request takes 30-45s as GPU initializes</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card info-card border-0 h-100">
+                                    <div class="card-body p-4">
+                                        <div class="badge bg-info bg-opacity-25 text-info mb-3">📊 PROCESSING</div>
+                                        <p class="card-text text-white-50 mb-0 small">AI analyzes 16 key frames from your video</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card info-card border-0 h-100">
+                                    <div class="card-body p-4">
+                                        <div class="badge bg-warning bg-opacity-25 text-warning mb-3">💾 FILE SIZE</div>
+                                        <p class="card-text text-white-50 mb-0 small">Keep under 50MB for optimal performance</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IBrowserFile SelectedFile;
+    private string FileWarning;
+    private bool IsLoading;
+    private string ResultMessage;
+    private ResultModel ResultData;
+
+    private class ResultModel
+    {
+        public string Action { get; set; }
+        public double Confidence { get; set; }
+        public string Message { get; set; }
+    }
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        FileWarning = null;
+
+        if (e.FileCount > 0)
+        {
+            SelectedFile = e.GetMultipleFiles(1)[0];
+
+            const long maxRecommended = 50 * 1024 * 1024;
+            if (SelectedFile.Size > maxRecommended)
+            {
+                FileWarning = "Selected file is larger than 50MB — consider trimming it for best performance.";
+            }
+        }
+        else
+        {
+            SelectedFile = null;
+        }
+    }
+
+    private async Task Upload()
+    {
+        if (SelectedFile == null)
+            return;
+
+        IsLoading = true;
+        ResultMessage = null;
+        StateHasChanged();
+
+        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + Path.GetExtension(SelectedFile.Name));
+        try
+        {
+            using (var fs = File.Create(tempPath))
+            using (var stream = SelectedFile.OpenReadStream(100 * 1024 * 1024))
+            {
+                await stream.CopyToAsync(fs);
+            }
+
+            var (Success, Message, Action, Confidence) = await ActionService.GetActionPredictionAsync(tempPath);
+
+            if (Success)
+            {
+                ResultData = new ResultModel { Action = Action, Confidence = Confidence, Message = Message };
+                ResultMessage = null;
+            }
+            else
+            {
+                ResultData = null;
+                ResultMessage = $"Error: {Message}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ResultMessage = $"Exception: {ex.Message}";
+        }
+        finally
+        {
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
